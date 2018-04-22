@@ -8,5 +8,7 @@ void animationInit(char **frames, int maxFrames, int width, int moveLimit, int f
 void clearScreen();
 void renderNextFrame();
 void animationEnd();
+void startupAnimation();
+
 
 #endif /* OLED_ANIMATION_H */

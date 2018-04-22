@@ -38,6 +38,10 @@ unsigned char circleLT[]  = {0x00, 0xF0, 0xF8, 0xFC, 0xFC, 0xFE, 0xFE, 0xFE};
 unsigned char circleRT[]  = {0xFE, 0xFE, 0xFE, 0xFC, 0xFC, 0xF8, 0xF0, 0x00};
 unsigned char circleLB[]  = {0x00, 0x0F, 0x1F, 0x3F, 0x3F, 0x7F, 0x7F, 0x7F};
 unsigned char circleRB[]  = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x0F, 0x00};
+unsigned char circleLTE[]  = {0x00, 0xF0, 0xF8, 0x1C, 0x0C, 0x06, 0x06, 0x06};
+unsigned char circleRTE[]  = {0x06, 0x06, 0x06, 0x0C, 0x1C, 0xF8, 0xF0, 0x00};
+unsigned char circleLBE[]  = {0x00, 0x0F, 0x1F, 0x38, 0x30, 0x60, 0x60, 0x60};
+unsigned char circleRBE[]  = {0x60, 0x60, 0x60, 0x30, 0x38, 0x1F, 0x0F, 0x00};
 
 unsigned char* buf;
 unsigned char* blankBuf;
@@ -136,6 +140,14 @@ void renderNextFrame() {
                 memcpy(buf + columnPad, circleLB, 8);
             else if (image[(y * colLimit) + x] == '$')
                 memcpy(buf + columnPad, circleRB, 8);
+            else if (image[(y * colLimit) + x] == 'P')
+                memcpy(buf + columnPad, circleLTE, 8);
+            else if (image[(y * colLimit) + x] == 'p')
+                memcpy(buf + columnPad, circleRTE, 8);
+            else if (image[(y * colLimit) + x] == 'M')
+                memcpy(buf + columnPad, circleLBE, 8);
+            else if (image[(y * colLimit) + x] == 'm')
+                memcpy(buf + columnPad, circleRBE, 8);
 
             columnPad = columnPad + 8;
         }
@@ -164,4 +176,59 @@ void renderNextFrame() {
 void animationEnd() {
     free(buf);
     free(blankBuf);
+}
+
+
+void startupAnimation()
+{
+    
+    char frame1[] = { 
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '!', '@', '.', '.', '.', '.',
+        '.', '.', '#', '$', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.'};
+   char frame2[] = { 
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '!', '@', '!', '@', '.', '.',
+        '.', '.', '#', '$', '#', '$', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.'};
+   char frame3[] = { 
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '!', '@', '!', '@', '.', '.',
+        '.', '.', '#', '$', '#', '$', '.', '.',
+        '.', '.', '!', '@', '.', '.', '.', '.',
+        '.', '.', '#', '$', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.'};
+   char frame4[] = { 
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '!', '@', '!', '@', '.', '.',
+        '.', '.', '#', '$', '#', '$', '.', '.',
+        '.', '.', '!', '@', 'P', 'p', '.', '.',
+        '.', '.', '#', '$', 'M', 'm', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.',
+        '.', '.', '.', '.', '.', '.', '.', '.'};
+
+    char* roll[] = {frame1,frame2,frame3,frame4};
+  
+    animationInit(roll, 4, 64, 0, 1000, true);
+
+    for(int i = 0; i < 3; i++) {
+        renderNextFrame();
+    }
+    animationEnd();
+
+    Screen.print(3,"PowerHousing 1.1");
+
+    delay(3000);
 }

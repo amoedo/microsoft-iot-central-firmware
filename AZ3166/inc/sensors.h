@@ -28,4 +28,8 @@ void turnLedOff();
 // IrDA
 void transmitIR();
 
+void changeFanStatus(uint status);
+
+bool checkForLeaks();
+
 #endif /* SENSORS_H */

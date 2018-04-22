@@ -109,7 +109,7 @@ int fanSpeedDesiredChange(const char *message, size_t size, char **response, siz
     animationInit(fan, 2, 64, 0, 0, true);
 
     Serial.println("fanSpeed desired property just got called");
-
+    Serial.println("message");
     // turn on the fan - sound
     AudioClass& Audio = AudioClass::getInstance();
     Audio.startPlay(fanSoundData, FAN_SOUND_DATA_SIZE);
@@ -291,12 +291,27 @@ int currentDesiredChange(const char *message, size_t size, char **response, size
 int irOnDesiredChange(const char *message, size_t size, char **response, size_t* resp_size) {
     Serial.println("activateIR desired property just got called");
 
-    Screen.clean();
-    Screen.print(0, "Firing IR beam");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(message);
+    bool value = root["activateIR"]["value"];
 
-    transmitIR();
+    if(value)
+    {
+        Screen.clean();
+        Screen.print(0, "Starting Fan");
+        changeFanStatus(HIGH);
+    }
+    else
+    {
+        Screen.clean();
+        Screen.print(0, "Stopping Fan");
+        changeFanStatus(LOW);
+    }
+    //transmitIR();
 
     incrementDesiredCount();
+
+    
 
     int status = 200;
     String responseString = "completed";

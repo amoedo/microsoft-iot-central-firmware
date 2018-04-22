@@ -139,3 +139,17 @@ void transmitIR() {
         delay(150);
     }
 }
+
+void changeFanStatus(uint status)
+{
+    pinMode(PB_10,OUTPUT);
+    digitalWrite(PB_10,status);
+}
+
+bool checkForLeaks()
+{
+    pinMode(PC_6,INPUT);
+    int value = digitalRead(PC_6);
+    if(value==1) {return false;}
+    else { return true; }
+}

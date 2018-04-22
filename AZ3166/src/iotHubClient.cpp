@@ -50,6 +50,21 @@ typedef struct EVENT_INSTANCE_TAG {
     int messageTrackingId; // For tracking the messages within the user callback.
 } EVENT_INSTANCE;
 
+
+////
+
+void software_Reset()
+// Restarts program from beginning but 
+// does not reset the peripherals and registers
+{
+  pinMode(PB_0,OUTPUT);
+  digitalWrite(PB_0,HIGH);
+  delay(1000);
+  digitalWrite(PB_0,LOW);
+}
+////
+
+
 void initIotHubClient(bool traceOn) {
     saveTraceOn = traceOn;
     String connString = readConnectionString();;
@@ -133,6 +148,7 @@ bool sendTelemetry(const char *payload) {
         incrementErrorCount();
         IoTHubMessage_Destroy(currentMessage->messageHandle);
         free(currentMessage);
+        software_Reset();
         return false;
     }
     (void)Serial.printf("IoTHubClient_LL_SendEventAsync accepted message for transmission to IoT Hub.\r\n");
@@ -331,6 +347,8 @@ static void deviceTwinGetStateCallback(DEVICE_TWIN_UPDATE_STATE update_state, co
     ((char*)payLoad)[size] = 0x00;
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.parseObject(payLoad);
+    //Serial.println((const char*)payLoad);
+    //Serial.println(update_state);
 
     if (update_state == DEVICE_TWIN_UPDATE_PARTIAL) {
         callDesiredCallback(root.begin()->key, (const char*)payLoad, size);
@@ -341,6 +359,7 @@ static void deviceTwinGetStateCallback(DEVICE_TWIN_UPDATE_STATE update_state, co
         // if they don't match then call the associated callback for the desired property
 
         Serial.println("Processing complete twin");
+        
 
         JsonObject& desired = root["desired"];
         JsonObject& reported = root["reported"];
@@ -348,7 +367,7 @@ static void deviceTwinGetStateCallback(DEVICE_TWIN_UPDATE_STATE update_state, co
         for (JsonObject::iterator it=desired.begin(); it!=desired.end(); ++it) {
             if (it->key[0] != '$') {
                 if (reported.containsKey(it->key) && (reported[it->key]["desiredVersion"] == desired["$version"])) {
-                    Serial.printf("key: %s found in reported and versions match\r\n", it->key);
+                    Serial.printf("key: %s found in reported and versions match\r\n",  it->key);
                 } else if (reported[it->key]["value"] != desired[it->key]["value"]){
                     Serial.printf("key: %s either not found in reported or versions do not match\r\n", it->key);
                     Serial.println(it->value.as<char*>());
@@ -382,6 +401,9 @@ static void sendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, v
     callbackCounter++;
     IoTHubMessage_Destroy(eventInstance->messageHandle);
     free(eventInstance);
+
+    if( result != IOTHUB_CLIENT_CONFIRMATION_OK) software_Reset();
+
 }
 
 static void checkConnection() {

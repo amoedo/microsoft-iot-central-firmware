@@ -30,24 +30,37 @@ Uses the following libraries:
 
 #include "Arduino.h"
 #include "EEPROMInterface.h"
+//#include "Serial1/Serial1.h"
 
 #include "inc/iotCentral.h"
 #include "inc/main_initialize.h"
 #include "inc/main_telemetry.h"
 #include "inc/config.h"
 #include "inc/device.h"
+#include "inc/oledAnimation.h"
 
 bool configured = false;
 String iotCentralConfig;
+RawSerial pc(USBTX, USBRX,250000);
+
+
 
 void setup()
 {
     Serial.begin(250000);
+    
     pinMode(LED_WIFI, OUTPUT);
     pinMode(LED_AZURE, OUTPUT);
     pinMode(LED_USER, OUTPUT);
+    pinMode(PB_6,OUTPUT);
+    digitalWrite(PB_6,LOW);
+
+    Serial.println("Starting...");
+    pc.puts("More Starting");
 
     iotCentralConfig = readIotCentralConfig();
+
+    startupAnimation();    
 
     if (iotCentralConfig[0] == 0x00) { 
         (void)Serial.printf("No configuration found entering config mode.\r\n");
@@ -83,7 +96,11 @@ void loop()
 
 	if (configured) {
         telemetryLoop();
+       // Serial1.println("Telemetry");
     } else {
         initializeLoop();
+     //   Serial1.println("Initialize");
     }
 }
+
+

@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include <ArduinoJson.h>
 
+
 #include "../inc/main_telemetry.h"
 #include "../inc/config.h"
 #include "../inc/wifi.h"
@@ -37,10 +38,15 @@ unsigned long timeSyncPeriod = 7200000;
 unsigned long lastTelemetrySend = 0;
 unsigned long lastShakeTime = 0;
 unsigned long lastSwitchPress = 0;
+unsigned long lastLeakDetected = 0;
 static int currentInfoPage = 0;
 static int lastInfoPage = -1;
 uint8_t telemetryState = 0xFF;
 
+float humidityReading = 0.0;
+float tempReading = 0.0;
+float pressureReading = 0.0;
+bool leakReading = false;
 
 void telemetrySetup(String iotCentralConfig) {
     reset = false;
@@ -103,7 +109,7 @@ void telemetryLoop() {
    
     // look for button B pressed to page through info screens
     if (IsButtonClicked(USER_BUTTON_B) && (millis() - lastSwitchPress > switchDebounceTime)) {
-        currentInfoPage = (currentInfoPage + 1) % 3;
+        currentInfoPage = (currentInfoPage + 1) % 4;
         lastSwitchPress = millis();
     }
 
@@ -115,7 +121,7 @@ void telemetryLoop() {
 
         sendTelemetryPayload(payload.c_str());
 
-        lastTelemetrySend = millis();
+        lastTelemetrySend = millis();        
     }
 
     // example of sending a device twin reported property when the accelerometer detects a double tap
@@ -138,6 +144,36 @@ void telemetryLoop() {
         lastShakeTime = millis();
     }
 
+    if ((checkForLeaks()!=leakReading) && (millis() - lastLeakDetected > reportedSendInterval))
+    {
+        String leakProperty = F("{\"leak\":{{leak}}}");
+        
+        Screen.clean();
+        if(checkForLeaks())
+        {
+            leakReading = true;
+            leakProperty.replace("{{leak}}", "true");
+            Screen.print(0,"!! WATER LEAK DETECTED!!");
+        }
+        else
+        {
+            leakReading = false;
+            leakProperty.replace("{{leak}}", "false");
+            Screen.print(0,"!! WATER LEAK CLEARED!!");
+        }
+                        
+
+        if (sendReportedProperty(leakProperty.c_str())) {
+            Serial.println("Reported property leak successfully sent");
+            incrementReportedCount();
+        } else {
+            Serial.println("Reported property leak failed to during sending");
+            incrementErrorCount();
+        }
+
+        lastLeakDetected = millis();
+    }
+
     // update the current display page
     if (currentInfoPage != lastInfoPage) {
         Screen.clean();
@@ -155,6 +191,11 @@ void telemetryLoop() {
         case 2:  // Network information    
             displayNetworkInfo();
             break;
+        case 3:
+            char buff2[64];
+            sprintf(buff, "--- Sensors ---\r\nHumidity: %f\r\nTemp: %f\r\nPressure: %f", humidityReading,tempReading,pressureReading);
+            Screen.print(0, buff);
+            break;
     }
     
     delay(1);  // good practice to help prevent lockups
@@ -170,30 +211,31 @@ void telemetryCleanup() {
     shutdownWiFi();
 }
 
+
 void buildTelemetryPayload(String *payload) {
     *payload = "{";
 
     // HTS221
-    float humidity = 0.0;
+    
     if ((telemetryState & HUMIDITY_CHECKED) == HUMIDITY_CHECKED) {
-        humidity = readHumidity();
+        humidityReading = readHumidity();
         payload->concat(",\"humidity\":");
-        payload->concat(String(humidity));
+        payload->concat(String(humidityReading));
     }
 
-    float temp = 0.0;
+    
     if ((telemetryState & TEMP_CHECKED) == TEMP_CHECKED) {
-        temp = readTemperature();
+        tempReading = readTemperature();
         payload->concat(",\"temp\":");
-        payload->concat(String(temp));
+        payload->concat(String(tempReading));
     }
 
     // LPS22HB
-    float pressure = 0.0;
+    
     if ((telemetryState & PRESSURE_CHECKED) == PRESSURE_CHECKED) {
-        pressure = readPressure();
+        pressureReading = readPressure();
         payload->concat(",\"pressure\":");
-        payload->concat(String(pressure));
+        payload->concat(String(pressureReading));
     }
 
     // LIS2MDL
